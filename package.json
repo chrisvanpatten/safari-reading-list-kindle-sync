@@ -1,0 +1,13 @@
+{
+  "name": "safari-reading-list-kindle-sync",
+  "version": "1.0.0",
+  "description": "Sync new Safari Reading List entries to your Kindle",
+  "main": "index.js",
+  "dependencies": {
+    "dotenv": "^6.2.0",
+    "read-safari-reading-list": "^1.0.1",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5"
+  },
+  "license": "MIT"
+}
