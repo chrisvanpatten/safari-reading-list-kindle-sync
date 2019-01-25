@@ -5,6 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "dotenv": "^6.2.0",
+    "lodash": "^4.17.11",
+    "moment": "^2.24.0",
     "read-safari-reading-list": "^1.0.1",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.5"

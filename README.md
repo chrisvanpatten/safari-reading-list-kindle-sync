@@ -1,17 +1,20 @@
 # Sync Safari Reading List to Kindle
 
-Ever wanted to add an article to your Safari Reading List and have it sent to your Kindle? This script can help.
+Ever wanted to add an article to your Safari Reading List and have it sent to your Kindle? This script can help!
+
+It leverages the [SendToReader](https://sendtoreader.com) API to format and send articles to your Kindle. Make sure you have an account and have configured it correctly.
 
 ## Usage
 
 1. Clone the repo locally
 2. Copy `.env-example` to `.env` and fill in your credentials/configuration data
-3. Set up the script to run automatically when `~/Library/Safari/Bookmarks.plist` is updated (via Hazel, fswatch, etc.)
+3. Set up the script to run automatically when `~/Library/Safari/Bookmarks.plist` is modified (a watch tool, like Hazel or fswatch, will help)
 
 ## Caveats
 
 + You will probably need to whitelist your node binary and watch tool for Full Disk Access
-+ The script makes no effort to prevent duplicate sends (this will be improved in the future)
++ Safari is fairly liberal in how often it modifies the `Bookmarks.plist`, which can lead to duplicate events. The script applies a few kludgy heuristics to try avoiding this, but should not be considered perfect
++ There is some rudimentary logging to make it easier to diagnose issues. You may want to capture your `stdout` and/or `stderr` to a log file if you're running this utility outside of a terminal
 
 ## License & Conduct
 
