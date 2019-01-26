@@ -8,12 +8,12 @@ It leverages the [SendToReader](https://sendtoreader.com) API to format and send
 
 1. Clone the repo locally
 2. Copy `.env-example` to `.env` and fill in your credentials/configuration data
-3. Set up the script to run automatically when `~/Library/Safari/Bookmarks.plist` is modified (a watch tool, like Hazel or fswatch, will help)
+3. Set up the script to run automatically when `~/Library/Safari/Bookmarks.plist` is modified (a watch tool, like Hazel or fswatch, will help), or via a cron job
 
 ## Caveats
 
-+ You will probably need to whitelist your node binary and watch tool for Full Disk Access
-+ Safari is fairly liberal in how often it modifies the `Bookmarks.plist`, which can lead to duplicate events. The script applies a few kludgy heuristics to try avoiding this, but should not be considered perfect
++ In recent macOS versions, `~/Library/Safari/Bookmarks.plist` is protected by the system. Make sure you whitelist your task runner for Full Disk Access
++ Safari is fairly liberal in how often it modifies the `Bookmarks.plist`, which can lead to duplicate events. To prevent this, the script uses a local JSON file as a database, and only sends URLs that haven't previously been marked sent
 + There is some rudimentary logging to make it easier to diagnose issues. You may want to capture your `stdout` and/or `stderr` to a log file if you're running this utility outside of a terminal
 
 ## License & Conduct

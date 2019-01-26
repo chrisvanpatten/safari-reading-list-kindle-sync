@@ -1,64 +1,111 @@
 /**
  * External imports
  */
-const dotenv   = require('dotenv').config({path:`${__dirname}/.env`})
+const dotenv   = require('dotenv').config({path: `${__dirname}/.env`})
 const readList = require('read-safari-reading-list')
 const request  = require('request-promise-native')
-const lodash   = require('lodash')
-const moment   = require('moment')
+const delay    = require('iterate-with-delay')
 
+/**
+ * Set up the database
+ */
+const low      = require('lowdb')
+const FileSync = require('lowdb/adapters/FileSync')
+const adapter  = new FileSync(`${__dirname}/db.json`)
+const db       = low(adapter)
+
+// Set up the database
+db.defaults({articles: []}).write()
+
+// Get the article "table"
+const articles = db.get('articles')
+
+// Grab the Safari reading list
 readList()
-  .then(function (json) {
-    /**
-     * Sometimes, Safari doesn't have a usable description field. In these
-     * cases, it still adds the item to the reading list, and then attempts
-     * to fetch the description in a follow-up request, which can cause your
-     * file watcher to trigger this script twice. This is a hacky way to
-     * mitigate that issue.
-     */
-    if (typeof json[0].description === 'undefined') {
-      throw {
-        message: 'Item does not have description set',
-        data: json[0],
+  .then(function (readingList) {
+    // Loop through the items in the database
+    readingList.forEach(function ({title, url, dateAdded}) {
+      // Skip if this URL exists in the database
+      if (articles.find({url: url}).value()) {
+        return
       }
+
+      // Add to the database
+      articles.push({
+        title: title,
+        url: url,
+        dateAdded: dateAdded,
+        sent: false,
+      }).write()
+    })
+
+    // Get articles marked unsent
+    return articles.filter({sent: false})
+  })
+  .then(function (articlesToSend) {
+    const items = articlesToSend.value()
+
+    // Quit early if there are no new articles
+    if (items.length < 1) {
+      console.log(`No articles to send`)
+
+      process.exit()
     }
 
-    /**
-     * Your file watcher will be triggered again when an item is removed
-     * from your Safari Reading List. This is an attempt to mitigate that
-     * by checking if the item was recently added. If not, an error is
-     * thrown and the script exits early.
-     */
-    const dateAdded = moment(json[0].dateAdded)
-    const timeAgo   = moment().utc().subtract(20, 'seconds')
+    // Get the party started
+    console.log(`Preparing to send ${items.length} articles`)
 
-    if (dateAdded.isBefore(timeAgo)) {
-      throw {
-        message: 'Item not added recently enough',
-        data: json[0],
-      }
-    }
+    // Send the unsent articles
+    delay.each(items, {time: 2000}, function (item) {
+      request
+        .get({
+          url: 'https://sendtoreader.com/api/send/',
+          qs: {
+            url: item.url,
+            username: process.env.SENDTOREADER_USERNAME,
+            password: process.env.SENDTOREADER_PASSWORD,
+          },
+        })
+        .then(function (response) {
+          // Handle error conditions
+          if (response != 200) {
+            console.log(response)
+            console.log(`Could not send: ${item.url}`)
 
-    return json[0]
-  })
-  .then(function ({url}) {
-    return request
-      .get({
-        url: 'https://sendtoreader.com/api/send/',
-        qs: {
-          url: url,
-          username: process.env.SENDTOREADER_USERNAME,
-          password: process.env.SENDTOREADER_PASSWORD,
-        },
-      })
-      .then(function (response) {
-        return JSON.parse(response)
-      })
-  })
-  .then(function (response) {
-    console.log(response)
+            process.exit(1)
+          }
 
-    process.exit()
+          // Mark the article as sent
+          articlesToSend
+            .find({url: item.url})
+            .assign({sent: true})
+            .write()
+
+          // Make a log note
+          console.log(`Successfully sent >>> ${item.url}`)
+        })
+        .catch(function (error) {
+          console.log(error.statusCode)
+
+          if (error.statusCode === 405) {
+            console.log(`SendToReader could not process this article so we marked it as sent to prevent future attempts >>> ${item.url}`)
+
+            // Mark the article as sent
+            articlesToSend
+              .find({url: item.url})
+              .assign({sent: true})
+              .write()
+          }
+
+          if (error.statusCode === 401) {
+            console.log('Your SendToReader account is currently rate-limited')
+          }
+
+          process.exit(1)
+        })
+
+      return
+    })
   })
   .catch(function (error) {
     console.log(error)

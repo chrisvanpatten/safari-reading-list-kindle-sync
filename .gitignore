@@ -1,5 +1,6 @@
 .env
-node_modules
-npm-debug.log
 .DS_Store
-error.log
+node_modules
+*.log
+*.json
+*.sh
