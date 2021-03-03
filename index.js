@@ -61,6 +61,7 @@ readList()
         .get({
           url: 'https://sendtoreader.com/api/send/',
           qs: {
+            rejectUnauthorized: false,
             url: item.url,
             username: process.env.SENDTOREADER_USERNAME,
             password: process.env.SENDTOREADER_PASSWORD,
